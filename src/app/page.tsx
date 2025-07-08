@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import "./globals.css";
+import CardGame from "./CardGame";
 
 // 컬러 팔레트 상수
 const COLORS = {
@@ -75,12 +76,12 @@ type BrainArea = {
 };
 
 // 게임 버튼 컴포넌트
-function GameButton({ game }: { game: Game }) {
+function GameButton({ game, onClick }: { game: Game; onClick?: () => void }) {
   return (
     <button
       key={game.id}
       className="font-extrabold rounded-xl py-5 px-6 text-lg sm:text-xl transition-colors shadow-md w-full min-h-[64px] flex flex-col items-center justify-center border-2 bg-white text-neutral-900 border-blue-300"
-      disabled
+      onClick={onClick}
     >
       <span className="flex items-center gap-2 mb-1">
         <span className="text-2xl" aria-label="게임 이모지">{gameEmojis[game.name] || '🎮'}</span>
@@ -95,7 +96,7 @@ function GameButton({ game }: { game: Game }) {
 }
 
 // 뇌 영역 섹션 컴포넌트
-function BrainAreaSection({ area }: { area: BrainArea }) {
+function BrainAreaSection({ area, onGameClick }: { area: BrainArea; onGameClick?: (game: Game) => void }) {
   return (
     <section
       key={area.key}
@@ -126,7 +127,7 @@ function BrainAreaSection({ area }: { area: BrainArea }) {
       {/* 게임 버튼 그리드 */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
         {area.games.map((game) => (
-          <GameButton key={game.id} game={game} />
+          <GameButton key={game.id} game={game} onClick={() => onGameClick && onGameClick(game)} />
         ))}
       </div>
     </section>
@@ -275,6 +276,7 @@ export default function Home() {
 
 function HomeContent() {
   const { data: session, status } = useSession();
+  const [showCardGame, setShowCardGame] = useState(false);
   if (status === "loading") {
     return <div className="flex justify-center items-center min-h-screen">로딩 중...</div>;
   }
@@ -302,10 +304,17 @@ function HomeContent() {
       </header>
       <main className="w-full max-w-2xl flex flex-col gap-8">
         {brainAreas.map((area) => (
-          <BrainAreaSection key={area.key} area={area} />
+          <BrainAreaSection key={area.key} area={area} onGameClick={(game) => {
+            if (game.name === "카드 뒤집기") setShowCardGame(true);
+          }} />
         ))}
       </main>
       <footer className="mt-10 text-xs text-gray-400">© 2024 치매예방 뇌운동 게임 100선</footer>
+      {showCardGame && (
+        <div style={{position:'fixed', left:0, top:0, width:'100vw', height:'100vh', background:'#0008', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center'}}>
+          <CardGame onClose={() => setShowCardGame(false)} />
+        </div>
+      )}
     </div>
   );
 }
