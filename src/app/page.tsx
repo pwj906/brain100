@@ -1,7 +1,8 @@
 'use client';
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import "./globals.css";
 
 // 컬러 팔레트 상수
 const COLORS = {
@@ -132,7 +133,139 @@ function BrainAreaSection({ area }: { area: BrainArea }) {
   );
 }
 
+const EMOJIS = ["🍎", "🍌", "🍇", "🍉", "🍒", "🍋", "🍑", "🍍", "🥝", "🥑", "🍓", "🍈"];
+
+function shuffle<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+interface Card {
+  id: number;
+  emoji: string;
+  flipped: boolean;
+  matched: boolean;
+}
+
+const CARD_SIZE = 2; // 2x2
+
 export default function Home() {
+  // 카드 초기화
+  const [stage, setStage] = useState(1); // 스테이지
+  const [cards, setCards] = useState<Card[]>([]);
+  const [flippedIdx, setFlippedIdx] = useState<number[]>([]);
+  const [lock, setLock] = useState(false);
+  const [isPreview, setIsPreview] = useState(true); // 전체 공개 상태
+  const [timer, setTimer] = useState(60); // 1분 제한
+  const [gameState, setGameState] = useState<'ready'|'playing'|'pass'|'fail'>('ready');
+  const [xp, setXp] = useState(0);
+
+  // 카드 개수 계산
+  const getCardCount = (stage: number) => 4 + (stage - 1) * 2;
+  const getGrid = (count: number) => {
+    // 2줄 고정, 열 개수 자동
+    const rows = 2;
+    const cols = count / 2;
+    return { rows, cols };
+  };
+
+  // 카드 세팅
+  useEffect(() => {
+    const count = getCardCount(stage);
+    const selected = shuffle(EMOJIS).slice(0, count / 2);
+    const cardList = shuffle(
+      selected.concat(selected).map((emoji, idx) => ({
+        id: idx,
+        emoji,
+        flipped: true, // 처음엔 모두 공개
+        matched: false,
+      }))
+    );
+    setCards(cardList);
+    setFlippedIdx([]);
+    setLock(true);
+    setIsPreview(true);
+    setGameState('ready');
+    setTimer(60);
+    // 1.5초 후 자동으로 모두 뒤집기
+    const timerId = setTimeout(() => {
+      setCards(cards => cards.map(card => ({ ...card, flipped: false })));
+      setLock(false);
+      setIsPreview(false);
+      setGameState('playing');
+    }, 1500);
+    return () => clearTimeout(timerId);
+  }, [stage]);
+
+  // 타이머
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    if (timer <= 0) {
+      setGameState('fail');
+      setLock(true);
+      return;
+    }
+    const t = setTimeout(() => setTimer(timer - 1), 1000);
+    return () => clearTimeout(t);
+  }, [timer, gameState]);
+
+  // 카드 클릭 핸들러
+  const handleFlip = (idx: number) => {
+    if (lock || isPreview || cards[idx].flipped || cards[idx].matched || gameState !== 'playing') return;
+    const newFlipped = [...flippedIdx, idx];
+    const newCards = cards.map((card, i) =>
+      i === idx ? { ...card, flipped: true } : card
+    );
+    setCards(newCards);
+    setFlippedIdx(newFlipped);
+
+    if (newFlipped.length === 2) {
+      setLock(true);
+      setTimeout(() => {
+        const [a, b] = newFlipped;
+        if (newCards[a].emoji === newCards[b].emoji) {
+          // 짝 맞춤
+          setCards(cards => {
+            const updated = cards.map((card, i) =>
+              i === a || i === b ? { ...card, matched: true } : card
+            );
+            // 모두 맞췄는지 체크
+            if (updated.every(card => card.matched)) {
+              setGameState('pass');
+              setXp(xp => xp + 10 * stage);
+            }
+            return updated;
+          });
+        } else {
+          // 다시 뒤집기
+          setCards(cards =>
+            cards.map((card, i) =>
+              i === a || i === b ? { ...card, flipped: false } : card
+            )
+          );
+        }
+        setFlippedIdx([]);
+        setLock(false);
+      }, 1000);
+    }
+  };
+
+  // 다음 스테이지
+  const handleNextStage = () => {
+    setStage(stage + 1);
+  };
+  // 재시도
+  const handleRetry = () => {
+    setStage(1);
+    setXp(0);
+  };
+
+  const { cols } = getGrid(getCardCount(stage));
+
   return (
     <SessionProvider>
       <HomeContent />
