@@ -1,6 +1,9 @@
+'use client';
 import React from "react";
+import { SessionProvider } from "next-auth/react";
+import { useSession, signIn, signOut } from "next-auth/react";
 
-// 실제 사용하는 컬러만 남긴 팔레트
+// 컬러 팔레트 상수
 const COLORS = {
   green: '#6BCB77', // 메인 밝은 연두
   blue: '#62A9FF', // 서브 블루
@@ -9,7 +12,7 @@ const COLORS = {
   bg: '#F8F9FA', // 전체 배경
 };
 
-// 게임별 이모지 매핑 (fallback: 🎮)
+// 게임별 이모지 매핑
 const gameEmojis: { [key: string]: string } = {
   '카드 뒤집기': '🃏',
   '숫자 기억하기': '🔢',
@@ -22,6 +25,7 @@ const gameEmojis: { [key: string]: string } = {
   '숫자 퍼즐': '🧩',
 };
 
+// 뇌 영역 데이터
 const brainAreas = [
   {
     key: "memory",
@@ -58,77 +62,114 @@ const brainAreas = [
   },
 ];
 
-const maxLevel = 100;
+type Game = { id: number; name: string; rewardExp: number; stage: number };
+type BrainArea = {
+  key: string;
+  name: string;
+  desc: string;
+  level: number;
+  exp: number;
+  expToNext: number;
+  games: Game[];
+};
+
+// 게임 버튼 컴포넌트
+function GameButton({ game }: { game: Game }) {
+  return (
+    <button
+      key={game.id}
+      className="font-extrabold rounded-xl py-5 px-6 text-lg sm:text-xl transition-colors shadow-md w-full min-h-[64px] flex flex-col items-center justify-center border-2 bg-white text-neutral-900 border-blue-300"
+      disabled
+    >
+      <span className="flex items-center gap-2 mb-1">
+        <span className="text-2xl" aria-label="게임 이모지">{gameEmojis[game.name] || '🎮'}</span>
+        <span>{game.name}</span>
+      </span>
+      <span className="flex items-center gap-2 text-base mt-1 font-bold justify-center text-blue-500">
+        현재 스테이지: {game.stage}
+        <span style={{color: COLORS.yellow, fontWeight: 900, textShadow: '0 1px 2px #4448, 0 0 2px #fff'}}>+{game.rewardExp}XP</span>
+      </span>
+    </button>
+  );
+}
+
+// 뇌 영역 섹션 컴포넌트
+function BrainAreaSection({ area }: { area: BrainArea }) {
+  return (
+    <section
+      key={area.key}
+      className="rounded-2xl shadow p-6 flex flex-col gap-5 border"
+      style={{background: COLORS.card, borderColor: '#ddd', borderWidth: 2}}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col w-full">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-900">{area.name}</h2>
+            <span className="text-xl sm:text-2xl font-bold text-neutral-800">Lv.{area.level}</span>
+          </div>
+          <p className="text-lg sm:text-xl mt-3 leading-snug font-semibold text-neutral-700">{area.desc}</p>
+          <div className="w-full max-w-md mt-3 h-9 rounded-xl relative flex items-center shadow-inner border border-gray-300 bg-white">
+            <div
+              className="h-full rounded-xl transition-all duration-300"
+              style={{
+                width: `${Math.min((area.exp / area.expToNext) * 100, 100)}%`,
+                background: COLORS.green,
+              }}
+            ></div>
+            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg sm:text-xl font-extrabold select-none text-neutral-900" style={{textShadow:'0 1px 2px #fff8'}}>
+              {area.exp} / {area.expToNext} XP
+            </span>
+          </div>
+        </div>
+      </div>
+      {/* 게임 버튼 그리드 */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+        {area.games.map((game) => (
+          <GameButton key={game.id} game={game} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
-  // 영역별 레벨 바 차트용 데이터
-  const areaColors = [
-    "#2563eb", // 기억력
-    "#10b981", // 집중력
-    "#f59e42", // 주의력
-    "#e11d48", // 판단력
-    "#a21caf", // 반응력
-    "#0ea5e9", // 언어능력
-    "#facc15", // 공간지각력
-    "#7c3aed", // 계산력
-    "#14b8a6", // 추론력
-    "#f43f5e", // 창의력
-  ];
+  return (
+    <SessionProvider>
+      <HomeContent />
+    </SessionProvider>
+  );
+}
 
+function HomeContent() {
+  const { data: session, status } = useSession();
+  if (status === "loading") {
+    return <div className="flex justify-center items-center min-h-screen">로딩 중...</div>;
+  }
+  if (!session) {
+    return (
+      <div className="min-h-screen flex flex-col justify-center items-center bg-[#F8F9FA]">
+        <h1 className="text-2xl font-bold mb-6">치매예방 뇌운동 게임 100선</h1>
+        <button onClick={() => signIn("kakao")}
+          className="px-6 py-3 rounded bg-yellow-300 hover:bg-yellow-400 font-bold text-neutral-900 text-lg shadow">
+          카카오로 로그인
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen flex flex-col items-center py-8 px-2 sm:px-0" style={{background: COLORS.bg}}>
       <header className="w-full max-w-2xl mb-8 flex flex-col items-center">
         <h1 className="text-3xl sm:text-4xl font-extrabold mb-4 text-neutral-900 tracking-tight">치매예방 뇌운동 게임 100선</h1>
+        <div className="mt-2">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold">{session.user?.name}님 환영합니다!</span>
+            <button onClick={() => signOut()} className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm">로그아웃</button>
+          </div>
+        </div>
       </header>
       <main className="w-full max-w-2xl flex flex-col gap-8">
         {brainAreas.map((area) => (
-          <section
-            key={area.key}
-            className="rounded-2xl shadow p-6 flex flex-col gap-5 border"
-            style={{background: COLORS.card, borderColor: '#ddd', borderWidth: 2}}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col w-full">
-                <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-neutral-900">{area.name}</h2>
-                  <span className="text-xl sm:text-2xl font-bold text-neutral-800">Lv.{area.level}</span>
-                </div>
-                <p className="text-lg sm:text-xl mt-3 leading-snug font-semibold text-neutral-700">{area.desc}</p>
-                <div className="w-full max-w-md mt-3 h-9 rounded-xl relative flex items-center shadow-inner border border-gray-300 bg-white">
-                  <div
-                    className="h-full rounded-xl transition-all duration-300"
-                    style={{
-                      width: `${Math.min((area.exp / area.expToNext) * 100, 100)}%`,
-                      background: COLORS.green,
-                    }}
-                  ></div>
-                  <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-lg sm:text-xl font-extrabold select-none text-neutral-900" style={{textShadow:'0 1px 2px #fff8'}}>
-                    {area.exp} / {area.expToNext} XP
-                  </span>
-                </div>
-              </div>
-            </div>
-            {/* 게임 버튼 그리드 */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
-              {area.games.map((game) => (
-                <button
-                  key={game.id}
-                  className="font-extrabold rounded-xl py-5 px-6 text-lg sm:text-xl transition-colors shadow-md w-full min-h-[64px] flex flex-col items-center justify-center border-2 bg-white text-neutral-900 border-blue-300"
-                  // onClick={() => router.push(`/game/${area.key}/${game.id}`)}
-                  disabled
-                >
-                  <span className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl" aria-label="게임 이모지">{gameEmojis[game.name] || '🎮'}</span>
-                    <span>{game.name}</span>
-                  </span>
-                  <span className="flex items-center gap-2 text-base mt-1 font-bold justify-center text-blue-500">
-                    현재 스테이지: {game.stage}
-                    <span style={{color: COLORS.yellow, fontWeight: 900, textShadow: '0 1px 2px #4448, 0 0 2px #fff'}}>+{game.rewardExp}XP</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
+          <BrainAreaSection key={area.key} area={area} />
         ))}
       </main>
       <footer className="mt-10 text-xs text-gray-400">© 2024 치매예방 뇌운동 게임 100선</footer>
