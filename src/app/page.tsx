@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import "./globals.css";
 import CardGame from "./CardGame";
+import { useUserGameData } from "@/hooks/useUserGameData";
 
 // 컬러 팔레트 상수
 const COLORS = {
@@ -155,6 +156,13 @@ interface Card {
 const CARD_SIZE = 2; // 2x2
 
 export default function Home() {
+  const { data: session } = useSession();
+  
+  // 카드 뒤집기 게임 성공 시 XP/스테이지 업데이트
+  const handleCardGamePass = async (xp: number, stage: number) => {
+    console.log('Card game passed! XP:', xp, 'Stage:', stage);
+  };
+
   // 카드 초기화
   const [stage, setStage] = useState(1); // 스테이지
   const [cards, setCards] = useState<Card[]>([]);
@@ -237,7 +245,6 @@ export default function Home() {
             // 모두 맞췄는지 체크
             if (updated.every(card => card.matched)) {
               setGameState('pass');
-              setXp(xp => xp + 10 * stage);
             }
             return updated;
           });
@@ -269,14 +276,96 @@ export default function Home() {
 
   return (
     <SessionProvider>
-      <HomeContent />
+      <HomeContent onCardGamePass={handleCardGamePass} />
     </SessionProvider>
   );
 }
 
-function HomeContent() {
+function HomeContent({ onCardGamePass }: { onCardGamePass: (xp: number, stage: number) => void }) {
   const { data: session, status } = useSession();
   const [showCardGame, setShowCardGame] = useState(false);
+  const [cardStage, setCardStage] = useState(1); // 카드게임 스테이지 상태를 HomeContent에서 관리
+  const [isDev, setIsDev] = useState(false);
+  const { brainAreas, loading, error, updateGameProgress } = useUserGameData();
+
+  // 유저별 게임 데이터 불러오기
+  useEffect(() => {
+    if (session?.user?.email) {
+      // 카드 게임 스테이지를 메모리 영역의 현재 스테이지로 설정
+      const memoryArea = brainAreas.find(area => area.key === 'memory');
+      if (memoryArea) {
+        setCardStage(memoryArea.games[0].stage);
+      }
+    }
+  }, [session?.user?.email, brainAreas]);
+
+  // 개발환경 체크를 useEffect로 이동하여 Hydration 에러 방지
+  useEffect(() => {
+    setIsDev(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  }, []);
+
+  // 카드 뒤집기 게임 성공 시 스테이지 업데이트
+  const handleCardGamePass = async (xp: number, stage: number) => {
+    console.log('Card game passed! XP:', xp, 'Stage:', stage);
+    await updateGameProgress('memory', xp, stage + 1);
+    setCardStage(stage + 1);
+    onCardGamePass(xp, stage);
+  };
+
+  // 로딩 상태 표시
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="text-2xl font-bold text-neutral-700">게임 데이터를 불러오는 중...</div>
+      </div>
+    );
+  }
+
+  // 에러 상태 표시
+  if (error) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="text-xl text-red-600">데이터 로딩 중 오류가 발생했습니다: {error}</div>
+      </div>
+    );
+  }
+
+  // 개발환경에서는 로그인 없이 바로 통과
+  if (isDev) {
+    if (showCardGame) {
+      return (
+        <div style={{ minHeight: '100vh', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CardGame 
+          onClose={() => setShowCardGame(false)} 
+          onPass={handleCardGamePass}
+          onFail={() => setCardStage(cardStage)}
+          stage={cardStage}
+          brainArea={brainAreas.find(area => area.key === "memory")}
+        />
+        </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen flex flex-col items-center py-8 px-2 sm:px-0" style={{background: COLORS.bg}}>
+        <header className="w-full max-w-2xl mb-8 flex flex-col items-center">
+          <h1 className="text-3xl sm:text-4xl font-extrabold mb-4 text-neutral-900 tracking-tight">치매예방 뇌운동 게임 100선</h1>
+        </header>
+        <main className="w-full max-w-2xl flex flex-col gap-8">
+          {brainAreas.map((area) => (
+            <BrainAreaSection key={area.key} area={area} onGameClick={(game) => {
+              if (game.name === "카드 뒤집기") {
+                setCardStage(game.stage);
+                setShowCardGame(true);
+              }
+            }} />
+          ))}
+        </main>
+        <footer className="mt-10 text-xs text-gray-400">© 2024 치매예방 뇌운동 게임 100선</footer>
+      </div>
+    );
+  }
+
   if (status === "loading") {
     return <div className="flex justify-center items-center min-h-screen">로딩 중...</div>;
   }
@@ -291,6 +380,21 @@ function HomeContent() {
       </div>
     );
   }
+  
+  if (showCardGame) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CardGame 
+          onClose={() => setShowCardGame(false)} 
+          onPass={handleCardGamePass}
+          onFail={() => setCardStage(cardStage)}
+          stage={cardStage}
+          brainArea={brainAreas.find(area => area.key === "memory")}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center py-8 px-2 sm:px-0" style={{background: COLORS.bg}}>
       <header className="w-full max-w-2xl mb-8 flex flex-col items-center">
@@ -305,16 +409,14 @@ function HomeContent() {
       <main className="w-full max-w-2xl flex flex-col gap-8">
         {brainAreas.map((area) => (
           <BrainAreaSection key={area.key} area={area} onGameClick={(game) => {
-            if (game.name === "카드 뒤집기") setShowCardGame(true);
+            if (game.name === "카드 뒤집기") {
+              setCardStage(game.stage);
+              setShowCardGame(true);
+            }
           }} />
         ))}
       </main>
       <footer className="mt-10 text-xs text-gray-400">© 2024 치매예방 뇌운동 게임 100선</footer>
-      {showCardGame && (
-        <div style={{position:'fixed', left:0, top:0, width:'100vw', height:'100vh', background:'#0008', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center'}}>
-          <CardGame onClose={() => setShowCardGame(false)} />
-        </div>
-      )}
     </div>
   );
 }
