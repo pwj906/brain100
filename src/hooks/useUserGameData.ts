@@ -46,7 +46,7 @@ export function useUserGameData() {
   const [error, setError] = useState<string | null>(null)
 
   // 개발 환경에서 사용할 유저 ID 생성
-  const getUserId = () => {
+  const getUserId = useCallback(() => {
     if (session?.user?.email) {
       return session.user.email
     }
@@ -60,7 +60,7 @@ export function useUserGameData() {
       return devUserId
     }
     return null
-  }
+  }, [session?.user?.email])
 
   // 유저 게임 데이터 불러오기
   const loadUserGameData = useCallback(async () => {
