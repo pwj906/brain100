@@ -78,9 +78,9 @@ export default function CardGame({ onClose, onPass, onFail, stage, brainArea }: 
   // stage가 바뀔 때마다 카드 세팅
   useEffect(() => {
     clearTimer();
-    let count = 3 + stage; // 스테이지 1: 4장부터 시작
-    let isOdd = count % 2 === 1;
-    let pairCount = Math.floor(count / 2);
+    const count = 3 + stage; // 스테이지 1: 4장부터 시작
+    const isOdd = count % 2 === 1;
+    const pairCount = Math.floor(count / 2);
     const selected = shuffle(EMOJIS).slice(0, pairCount);
     let cardList = shuffle(
       selected.concat(selected).map((emoji, idx) => ({

@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-// 개발 환경에서 RLS 우회를 위한 설정
-const isDevelopment = process.env.NODE_ENV === 'development'
-
 // 유저의 모든 뇌 영역 게임 데이터 가져오기
 export async function GET(request: NextRequest) {
   try {

@@ -28,42 +28,42 @@ const gameEmojis: { [key: string]: string } = {
   '숫자 퍼즐': '🧩',
 };
 
-// 뇌 영역 데이터
-const brainAreas = [
-  {
-    key: "memory",
-    name: "기억력",
-    desc: "과거 경험, 정보, 사실을 저장하고 떠올리는 능력",
-    level: 1,
-    exp: 0,
-    expToNext: 10,
-    games: [
-      { id: 1, name: "카드 뒤집기", rewardExp: 10, stage: 1 },
-    ],
-  },
-  {
-    key: "language",
-    name: "언어능력",
-    desc: "단어, 문장, 언어를 이해하고 표현하는 능력",
-    level: 1,
-    exp: 0,
-    expToNext: 10,
-    games: [
-      { id: 1, name: "단어 맞추기", rewardExp: 10, stage: 1 },
-    ],
-  },
-  {
-    key: "calculation",
-    name: "계산력",
-    desc: "숫자와 수식을 빠르게 계산하는 능력",
-    level: 1,
-    exp: 0,
-    expToNext: 10,
-    games: [
-      { id: 1, name: "수식 맞추기", rewardExp: 10, stage: 1 },
-    ],
-  },
-];
+// 뇌 영역 데이터 (사용하지 않음 - 주석 처리)
+// const brainAreas = [
+//   {
+//     key: "memory",
+//     name: "기억력",
+//     desc: "과거 경험, 정보, 사실을 저장하고 떠올리는 능력",
+//     level: 1,
+//     exp: 0,
+//     expToNext: 10,
+//     games: [
+//       { id: 1, name: "카드 뒤집기", rewardExp: 10, stage: 1 },
+//     ],
+//   },
+//   {
+//     key: "language",
+//     name: "언어능력",
+//     desc: "단어, 문장, 언어를 이해하고 표현하는 능력",
+//     level: 1,
+//     exp: 0,
+//     expToNext: 10,
+//     games: [
+//       { id: 1, name: "단어 맞추기", rewardExp: 10, stage: 1 },
+//     ],
+//   },
+//   {
+//     key: "calculation",
+//     name: "계산력",
+//     desc: "숫자와 수식을 빠르게 계산하는 능력",
+//     level: 1,
+//     exp: 0,
+//     expToNext: 10,
+//     games: [
+//       { id: 1, name: "수식 맞추기", rewardExp: 10, stage: 1 },
+//     ],
+//   },
+// ];
 
 type Game = { id: number; name: string; rewardExp: number; stage: number };
 type BrainArea = {
@@ -153,10 +153,10 @@ interface Card {
   matched: boolean;
 }
 
-const CARD_SIZE = 2; // 2x2
+// const CARD_SIZE = 2; // 2x2 (사용하지 않음 - 주석 처리)
 
 export default function Home() {
-  const { data: session } = useSession();
+  // const { data: session } = useSession(); // 사용하지 않음 - 주석 처리
   
   // 카드 뒤집기 게임 성공 시 XP/스테이지 업데이트
   const handleCardGamePass = async (xp: number, stage: number) => {
@@ -171,7 +171,7 @@ export default function Home() {
   const [isPreview, setIsPreview] = useState(true); // 전체 공개 상태
   const [timer, setTimer] = useState(60); // 1분 제한
   const [gameState, setGameState] = useState<'ready'|'playing'|'pass'|'fail'>('ready');
-  const [xp, setXp] = useState(0);
+  // const [xp, setXp] = useState(0); // 사용하지 않음 - 주석 처리
 
   // 카드 개수 계산
   const getCardCount = (stage: number) => 4 + (stage - 1) * 2;
@@ -269,10 +269,10 @@ export default function Home() {
   // 재시도
   const handleRetry = () => {
     setStage(1);
-    setXp(0);
+    // setXp(0); // 사용하지 않음 - 주석 처리
   };
 
-  const { cols } = getGrid(getCardCount(stage));
+  // const { cols } = getGrid(getCardCount(stage)); // 사용하지 않음 - 주석 처리
 
   return (
     <SessionProvider>
