@@ -20,11 +20,12 @@ const eslintConfig = [
     },
   },
   {
-    files: ['src/generated/**/*.js', 'src/generated/**/*.ts'],
+    files: ['**/generated/**/*.js', '**/generated/**/*.ts', '**/prisma/**/*.js', '**/prisma/**/*.ts'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ];
