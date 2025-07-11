@@ -104,7 +104,7 @@ export function useUserGameData() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [getUserId])
 
   // 유저 게임 데이터 저장
   const saveUserGameData = useCallback(async (brainAreaKey: string, level: number, exp: number, expToNext: number, currentStage: number) => {
@@ -156,7 +156,7 @@ export function useUserGameData() {
       setError(err instanceof Error ? err.message : 'Failed to save user data')
       throw err
     }
-  }, [])
+  }, [getUserId])
 
   // 게임 성공 시 XP 및 스테이지 업데이트
   const updateGameProgress = useCallback(async (brainAreaKey: string, earnedExp: number, newStage: number) => {
