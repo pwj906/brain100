@@ -3,6 +3,7 @@
 **/prisma/**
 *.generated.*
 *.prisma.*
+*.wasm.*
 
 # Build outputs
 .next/
