@@ -75,6 +75,12 @@ export function useUserGameData() {
       const result = await response.json()
 
       if (!response.ok) {
+        // Supabase API 키 오류인 경우 개발 모드로 처리
+        if (result.error && result.error.includes('Invalid API key')) {
+          console.warn('Supabase API key not configured, using local mode')
+          setError('데이터베이스 연결이 설정되지 않았습니다. 로컬 모드로 실행됩니다.')
+          return
+        }
         throw new Error(result.error || 'Failed to load user data')
       }
 
@@ -130,6 +136,27 @@ export function useUserGameData() {
       const result = await response.json()
 
       if (!response.ok) {
+        // Supabase API 키 오류인 경우 로컬 상태만 업데이트
+        if (result.error && result.error.includes('Invalid API key')) {
+          console.warn('Supabase API key not configured, updating local state only')
+          // 로컬 상태 업데이트
+          setBrainAreas(prev => prev.map(area => {
+            if (area.key === brainAreaKey) {
+              return {
+                ...area,
+                level,
+                exp,
+                expToNext,
+                games: area.games.map(game => ({
+                  ...game,
+                  stage: currentStage
+                }))
+              }
+            }
+            return area
+          }))
+          return result
+        }
         throw new Error(result.error || 'Failed to save user data')
       }
 

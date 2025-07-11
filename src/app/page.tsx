@@ -325,7 +325,20 @@ function HomeContent({ onCardGamePass }: { onCardGamePass: (xp: number, stage: n
   if (error) {
     return (
       <div style={{ minHeight: '100vh', background: '#F8F9FA', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="text-xl text-red-600">데이터 로딩 중 오류가 발생했습니다: {error}</div>
+        <div className="text-center max-w-md mx-auto p-6">
+          <div className="text-6xl mb-4">⚠️</div>
+          <div className="text-xl font-bold text-neutral-800 mb-2">데이터베이스 연결 오류</div>
+          <div className="text-base text-neutral-600 mb-4">{error}</div>
+          <div className="text-sm text-neutral-500">
+            게임은 계속 플레이할 수 있지만, 진행 상황이 저장되지 않을 수 있습니다.
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            다시 시도
+          </button>
+        </div>
       </div>
     );
   }
